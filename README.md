@@ -2,16 +2,16 @@
 
 ## IMAP
 
-[x] Vérification des identifiants
+- [x] Vérification des identifiants
 
-[x] Listing des dossiers de la boite mail
+- [x] Listing des dossiers de la boite mail
 
-[x] Récupération des infos des derniers mails X d'un dossier Y (date, envoyeur, etc)
+- [x] Récupération des infos des derniers mails X d'un dossier Y (date, envoyeur, etc)
 
-[] Récupération des bodys
+- [ ] Récupération des bodys
 
 ## SMTP
 
-[x] Pas encore réfléchi
+- [ ] Pas encore réfléchi
 
 
