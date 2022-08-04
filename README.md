@@ -10,6 +10,8 @@
 
 - [ ] Récupération des bodys
 
+- [ ] Pas encore réfléchi
+
 ## SMTP
 
 - [ ] Pas encore réfléchi
