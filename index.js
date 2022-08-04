@@ -31,8 +31,6 @@ const imap_credentials = new ImapFlow({
     logger: false,
 });
 
-// res.send(imap_credentials)
-
 async function main() {
     try {
       await imap_credentials.connect();
@@ -64,7 +62,7 @@ app.get('/folder', (req,res) => {
 
 /* Fin de récupération des dossiers */
 
-/* Récupération des X derniers mails */
+/* Récupération des X derniers mails dans le dossier Y */
 
 app.get('/get:folder?:toload?', (req,res) => {
     async function main() {
@@ -88,7 +86,7 @@ app.get('/get:folder?:toload?', (req,res) => {
 main().catch(res.send);
 })
 
-/* Récupération des X derniers mails */
+/* Récupération des X derniers mails dans le dossier Y */
 
 
 app.listen(8080, () => {
