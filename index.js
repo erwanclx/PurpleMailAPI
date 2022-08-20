@@ -3,16 +3,15 @@ const express = require('express')
 const app = express()
 const { ImapFlow } = require("imapflow");
 
-const imap_credentials_example = new ImapFlow({
-    host: 'imap.gmail.com',
-    port: '993',
-    tls: 'true',
-    auth: {
-        user: 'erwanclou@gmail.com',
-        pass: 'miywvzcrxygzexzp',
-    },
-    logger: false,
-});
+// const imapFlow = new ImapFlow({
+//     host: 'imap.gmail.com',
+//     port: '993',
+//     secure: 'true',
+//     auth: {
+//         user: 'purplemailapi@gmail.com',
+//         pass: 'oalliqmeyafafnrx',
+//     }
+// });
 
 /* Connexion à la boite mail via route */
 
@@ -64,30 +63,52 @@ app.get('/folder', (req,res) => {
 
 /* Récupération des X derniers mails dans le dossier Y */
 
-app.get('/get:folder?:toload?', (req,res) => {
-    async function main() {
-        await imap_credentials_example.connect();
+  app.get("/get:folder?:toload?", async (req, res) => {
+    const main = async () => {
         const { folder, toload } = req.query;
-        await imap_credentials_example.mailboxOpen(folder);
-    let messages = [];
-    let status = await imap_credentials_example.status(folder, {messages: true});
-    if (toload) {
-        var mailToLoad = status.messages - toload + 1;
-    }
-    else {
-        var mailToLoad = status.messages - 9;
-    }
-    for await (let msg of imap_credentials_example.fetch(`${status.messages}:${mailToLoad}`, {envelope: true,})) {
-        messages.push(msg.envelope)
-  }
-  res.send(messages.reverse())
-}
 
-main().catch(res.send);
-})
+        const imapFlow = new ImapFlow({
+          host: 'imap.gmail.com',
+          port: '993',
+          secure: 'true',
+          auth: {
+              user: 'purplemailapi@gmail.com',
+              pass: 'oalliqmeyafafnrx',
+          }
+      });
+      
+        await imapFlow.connect();
+        let lock = await imapFlow.getMailboxLock(folder);
+        try {
+            const messages = [];
+
+          const status = await imapFlow.status(folder, {
+        messages: true
+      });
+  
+      const mailToLoad = toload
+        ? status.messages - toload + 1
+        : status.messages - 9;
+  
+      for await (const msg of imapFlow.fetch(
+        `${status.messages}:${mailToLoad}`,
+        { envelope: true }
+      )) {
+        messages.push(msg.envelope);
+      }
+      res.send(messages.reverse());
+          lock.release();
+        } catch (e) {
+          console.log(e);
+          await imapFlow.logout();
+        }
+      
+        await imapFlow.logout();
+      }
+      main().catch(res.send);
+    });
 
 /* Récupération des X derniers mails dans le dossier Y */
-
 
 app.listen(8080, () => {
     console.log(`Server on`)
