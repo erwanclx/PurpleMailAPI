@@ -1,9 +1,12 @@
-const { query } = require('express');
+
 const express = require('express')
+const cors = require("cors");
 const app = express();
 const { ImapFlow } = require("imapflow");
 const jwt = require('jsonwebtoken');
 const jwt_decode = require('jwt-decode')
+const simpleParser = require('mailparser').simpleParser;
+const {decode} = require('html-entities');
 
 /* Génération de token */
 
@@ -102,8 +105,9 @@ app.get('/folder:token?', async (req,res) => {
   
       for await (const msg of imapFlow.fetch(
         `${status.messages}:${mailToLoad}`,
-        { envelope: true }
+        { envelope: true }, {uid: true}
       )) {
+        msg.envelope.uid = msg.uid;
         messages.push(msg.envelope);
       }
       res.send(messages.reverse());
@@ -117,7 +121,58 @@ app.get('/folder:token?', async (req,res) => {
       }
       main().catch(res.send);
     });
-/* Récupération des X derniers mails dans le dossier Y */
+/* Fin de récupération des X derniers mails dans le dossier Y */
+
+/* Télécharger le corps du mail */
+
+app.get("/message:token?:uid?", cors(),  async (req, res) => {
+  const { token, uid } = req.query;
+  token_credentials = jwt_decode(token);
+
+  const main = async () => {
+
+      const imapFlow = new ImapFlow({
+        host: token_credentials.host,
+        port: token_credentials.port,
+        secure: token_credentials.secure,
+        auth: {
+            user: token_credentials.user,
+            pass: token_credentials.pass,
+        }
+    });
+    
+      await imapFlow.connect();
+      let lock = await imapFlow.getMailboxLock('INBOX');
+      try {
+        const { meta, content } = await imapFlow.download(uid, null, {uid: true});
+        const parsed = await simpleParser(content);
+        const body = decode(parsed.html, {level: 'html5'})
+        const from = parsed.from.value
+        const to = parsed.to.value
+
+        const mail_return = {
+          from,
+          to,
+          body
+        }
+
+        res.json(mail_return);
+
+        
+        
+        lock.release();
+      } catch (e) {
+        console.log(e);
+        await imapFlow.logout();
+      }
+    
+      await imapFlow.logout();
+    }
+    main().catch(res.send);
+  });
+
+/* Fin de télécharger le corps du mail */
+
 
 app.listen(8080, () => {
     console.log(`Server on`)
