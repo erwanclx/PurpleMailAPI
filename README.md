@@ -10,6 +10,10 @@
 
 - [x] Récupération des bodys
 
+- [x] Recherche
+
+- [x] Fetch par UID
+
 - [ ] Pas encore réfléchi
 
 ## SMTP
