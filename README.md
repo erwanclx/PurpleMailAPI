@@ -8,7 +8,7 @@
 
 - [x] Récupération des infos des derniers mails X d'un dossier Y (date, envoyeur, etc)
 
-- [ ] Récupération des bodys
+- [x] Récupération des bodys
 
 - [ ] Pas encore réfléchi
 
