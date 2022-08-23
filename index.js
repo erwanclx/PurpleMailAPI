@@ -10,7 +10,7 @@ const {decode} = require('html-entities');
 
 /* Génération de token */
 
-app.get('/token:host?:port?:secure?:user?:pass?', async (req, res) => {
+app.get('/token:host?:port?:secure?:user?:pass?',cors(), async (req, res) => {
   const { host, port, secure, user, pass } = req.query;
   
   let imapClient = new ImapFlow({
@@ -45,7 +45,7 @@ app.get('/token:host?:port?:secure?:user?:pass?', async (req, res) => {
 
 /* Récupération des dossiers */
 
-app.get('/folder:token?', async (req,res) => {
+app.get('/folder:token?',cors(), async (req,res) => {
   const { token } = req.query;
     token_credentials = jwt_decode(token);
 
@@ -73,7 +73,7 @@ app.get('/folder:token?', async (req,res) => {
 /* Fin de récupération des dossiers */
 
 /* Récupération des X derniers mails dans le dossier Y */
-  app.get("/get:token?:folder?:toload?", async (req, res) => {
+  app.get("/getlasts:token?:folder?:toload?", cors(), async (req, res) => {
     const { folder, toload } = req.query;
     const { token } = req.query;
     token_credentials = jwt_decode(token);
@@ -173,6 +173,78 @@ app.get("/message:token?:uid?", cors(),  async (req, res) => {
 
 /* Fin de télécharger le corps du mail */
 
+/* Chercher mail */
+
+app.get("/search:token?:folder?:search?:filter?", cors(), async (req, res) => {
+  const { token, folder, search, filter } = req.query;
+  token_credentials = jwt_decode(token);
+
+  const main = async() => {
+    const imapFlow = new ImapFlow({
+      host: token_credentials.host,
+      port: token_credentials.port,
+      secure: token_credentials.secure,
+      auth: {
+          user: token_credentials.user,
+          pass: token_credentials.pass,
+      }
+  });
+
+  await imapFlow.connect();
+  let lock = await imapFlow.getMailboxLock(folder);
+  try {
+    let search_list = await imapFlow.search({[filter]: search}, {uid: true})
+    res.send(search_list)
+  }
+  finally {
+    lock.release();
+    await imapFlow.logout();
+  }
+  await imapFlow.logout();
+  }
+  main().catch(res.send);
+});
+
+/* Fin de chercher mail */
+
+/* Récupérer mail par UID a split avec , si plusieurs */
+
+app.get("/getbyuid:token?:folder?:uid?", cors(), async (req, res) => {
+  const { token, folder, uid } = req.query;
+  token_credentials = jwt_decode(token);
+  const main = async() => {
+    const imapFlow = new ImapFlow({
+      host: token_credentials.host,
+      port: token_credentials.port,
+      secure: token_credentials.secure,
+      auth: {
+          user: token_credentials.user,
+          pass: token_credentials.pass,
+      }
+  });
+  await imapFlow.connect();
+  let lock = await imapFlow.getMailboxLock(folder);
+    try {
+      const messages = [];
+      for await (const msg of imapFlow.fetch(
+        `${uid}`,
+        { envelope: true }, {uid: true}
+      )) {
+        messages.push(msg.envelope);
+      }
+      res.send(messages);
+          lock.release();
+    }
+    finally{
+        lock.release()
+        await imapFlow.logout()
+    }
+    await imapFlow.logout()
+  }
+  main().catch(res.send);
+});
+
+/* Fin récupérer mail par UID a split avec , si plusieurs */
 
 app.listen(8080, () => {
     console.log(`Server on`)
