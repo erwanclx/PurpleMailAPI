@@ -62,9 +62,18 @@ app.get('/folder:token?',cors(), async (req,res) => {
       });
       
         await imapFlow.connect();
-        let list = await imapFlow.list();
+        let list = await imapFlow.list({unseen: true});
         let folderList = []
-        list.forEach(mailbox => folderList.push(mailbox.path));
+        // list.forEach(mailbox => folderList[mailbox.path] = 'list.unseen');
+        for (const mailbox of list) {
+          let status = await imapFlow.status(mailbox.path, {unseen: true, messages: true});
+          folderList.push({
+            'name' : mailbox.name,
+            'path' : status.path,
+            'unseen': status.unseen,
+            'total' : status.messages
+          });
+        }
         res.send(folderList)
     }
     main().catch(res.send);
@@ -245,6 +254,136 @@ app.get("/getbyuid:token?:folder?:uid?", cors(), async (req, res) => {
 });
 
 /* Fin récupérer mail par UID a split avec , si plusieurs */
+
+// Créer dossier
+
+app.get("/folder/create:token?:path?", cors(), async (req, res) => {
+  const { token, path } = req.query
+  token_credentials = jwt_decode(token)
+  const main = async() => {
+    const imapFlow = new ImapFlow({
+      host: token_credentials.host,
+      port: token_credentials.port,
+      secure: token_credentials.secure,
+      auth: {
+          user: token_credentials.user,
+          pass: token_credentials.pass,
+      }
+  });
+  await imapFlow.connect();
+    try {
+      var created = await imapFlow.mailboxCreate(path);
+    }
+    catch (err){
+      res.send(err)
+    }
+    finally {
+      await imapFlow.logout()
+      let createdObj = {
+        'status' : 'OK',
+        'path' : created.path
+      }
+      res.send(createdObj)
+    }
+    await imapFlow.logout()
+  }
+  main().catch(res.send);
+});
+
+// Fin de Créer dossier
+
+// Suppresion de dossier
+
+app.get("/folder/delete:token?:path?", cors(), async (req, res) => {
+  const { token, path } = req.query
+  token_credentials = jwt_decode(token)
+  const main = async() => {
+    const imapFlow = new ImapFlow({
+      host: token_credentials.host,
+      port: token_credentials.port,
+      secure: token_credentials.secure,
+      auth: {
+          user: token_credentials.user,
+          pass: token_credentials.pass,
+      }
+  });
+  await imapFlow.connect();
+    try {
+      await imapFlow.mailboxDelete(path);
+      res.send('OK')
+    }
+    catch (err){
+      res.send('Check the path and retry')
+    }
+    finally {
+      await imapFlow.logout()
+    }
+    await imapFlow.logout()
+  }
+  main().catch(res.send);
+});
+
+// Fin de Suppresion de dossier 
+
+// Renommer dossier
+app.get("/folder/rename:token?:old?:new?", cors(), async (req, res) => {
+  const { token, old, to } = req.query
+  token_credentials = jwt_decode(token);
+  const main = async() => {
+    const imapFlow = new ImapFlow({
+      host: token_credentials.host,
+      port: token_credentials.port,
+      secure: token_credentials.secure,
+      auth: {
+          user: token_credentials.user,
+          pass: token_credentials.pass,
+      }
+  });
+  await imapFlow.connect();
+  try {
+    var renamed = await imapFlow.mailboxRename(old, to);
+  }
+  catch (err){
+    res.send('Check the original and the source path and retry')
+  }
+  finally {
+    res.send(renamed)
+    await imapFlow.logout()
+  }
+  await imapFlow.logout()
+}
+main().catch(res.send);
+});
+
+// Fin de Renommer de dossier
+
+// Quota de mail
+
+app.get("/quota:token?", cors(), async (req, res) => {
+  const { token } = req.query;
+  token_credentials = jwt_decode(token);
+  const main = async() => {
+    const imapFlow = new ImapFlow({
+      host: token_credentials.host,
+      port: token_credentials.port,
+      secure: token_credentials.secure,
+      auth: {
+          user: token_credentials.user,
+          pass: token_credentials.pass,
+      }
+  });
+  await imapFlow.connect()
+  try {
+    var quota = await imapFlow.getQuota();
+  }
+  finally {
+    res.send(quota.storage)
+  }
+}
+main().catch(res.send)
+});
+
+// Fin de Quota de mail 
 
 app.listen(8080, () => {
     console.log(`Server on`)
