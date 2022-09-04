@@ -385,6 +385,41 @@ main().catch(res.send)
 
 // Fin de Quota de mail 
 
+// Copier le coontenu d'un dossier dans un autre
+
+app.get("/copy:token?:source?:target?:uid?", cors(), async (req, res) => {
+  const { token, source, target, uid } = req.query
+  token_credentials = jwt_decode(token)
+  if (uid === null) {
+    uid = '1:*'
+  }
+  const main = async() => {
+    const imapFlow = new ImapFlow({
+      host: token_credentials.host,
+      port: token_credentials.port,
+      secure: token_credentials.secure,
+      auth: {
+        user: token_credentials.user,
+        pass: token_credentials.pass
+      }
+    });
+    await imapFlow.connect();
+    try {
+      await imapFlow.mailboxOpen(source);
+      let copy_result = await imapFlow.messageCopy(uid, target, {uid: true});
+      res.send(copy_result.uidMap.size)
+    }
+    finally {
+      await imapFlow.logout();
+    }
+    await imapFlow.logout();
+  }
+  main().catch(res.send);
+});
+
+// Fin de Copier le contenu d'un dossier dans un autre
+
+
 app.listen(8080, () => {
     console.log(`Server on`)
 })
