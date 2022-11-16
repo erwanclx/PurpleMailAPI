@@ -1,3 +1,7 @@
+# PurpleMailAPI
+
+Une API complète basée sur les protocoles IMAP et SMTP
+
 # To-do API
 
 ## IMAP
@@ -14,20 +18,11 @@
 
 - [x] Fetch par UID
 
-- [ ] Pas encore réfléchi
+- [ ] ..
 
 ## SMTP
 
-- [ ] Pas encore réfléchi
+- [ ] ..
 
-
-
-
-
-
-
-
-
-L'authentification sera organisé par le front via un fichier dans lequel on passera en settings a chaque requête ?
 
 
